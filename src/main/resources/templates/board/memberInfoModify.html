@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>회원 기본 정보 수정</title>
+<link rel="stylesheet" href="/css/board.css">
+
+<script>
+
+	window.onload = () => {
+	
+		var imgZone = document.querySelector('#imageZone');
+		var fileEvent = document.querySelector('#imageFile');
+		
+		//imageZone 영역 클릭 시 파일이벤트 처리. 자바스크립트에선 이벤트 발생 시 이벤트 정보를 담고 있는 event(e)라는 객체를 자동 생성.
+		imgZone.addEventListener('click', (e) => {
+			fileEvent.click(e) //사용자가 만든 UI를 통해 <input type="file">을 클릭하는 것과 같은 효과를 내게 됨
+		});
+		
+		//파일 선택창 열기 이벤트. 
+		fileEvent.addEventListener('change', (e) => { //파일선택해서 파일을 가져오는 거
+			const files = e.target.files; //선택한 파일 정보가 e.target.files(배열)에 저장
+			showImage(files); //읽어 온 파일을 인자로 받아서 이미지 미리보기를 실행
+		});
+		
+		
+		const showImage = (files) => {
+		
+			imgZone.innerHTML = '';
+			const imgFile = files[0];
+		
+			//if(imgFile.size > 1024*1024) { alert("1MB 이하 파일만 올려주세요."); return false; }
+			if(imgFile.type.indexOf("image") < 0) { alert("이미지 파일만 올려주세요"); return false; }
+		
+			const reader = new FileReader(); //new 연산자를 통해서 FileReader() 객체를 reader가 참조(상속)
+			reader.onload = function(event){ //아래 img 태그로 만들어진 element에 이미지를 보낼거라는 걸 결정--> 파일을 읽고 나서 해야 할 일...
+				imgZone.innerHTML = "<img src=" + event.target.result + " id='uploadImg' style='width:350px;height:auto'>";
+			};
+			
+			reader.readAsDataURL(imgFile); //실제로 파일을 읽는 부분은 여기...
+			console.log(event.target.result);
+		}
+	
+		btnModify.addEventListener('click', async () => {
+			
+			//유효성 검사	
+			const gender = document.getElementsByName('gender');
+			let genderValue = '';
+			for(let i=0; i<gender.length; i++){
+				if(gender[i].checked === true)
+					genderValue = gender[i].value;
+			}
+				
+			const hobby = document.querySelectorAll('input[name=hobby]:checked');
+			let hobbyArray = [];
+			for(let i=0; i<hobby.length; i++)
+				hobbyArray.push(hobby[i].value);
+			const job = document.querySelector('select[name=job] option:checked');
+		
+			if(genderValue == '') { alert("성별을 선택하세요."); return false; }		
+			if(hobbyArray.length == 0) { alert("취미를 선택하세요."); return false; }
+			if(job.value == '00') { alert("직업을 선택하세요."); return false; }
+			if(description.value == '') { alert("자기소개를 입력하세요."); description.focus(); return false; }
+	
+			address.value = addr1.value + " " + addr2.value;
+	
+			if(telno.value == '') { alert("전화번호를 입력하세요."); telno.focus(); return false; }
+		 	//전화번호 문자열 정리
+			const beforeTelno = telno.value;
+		 	const afterTelno = beforeTelno.replace(/\-/gi,"").replace(/\ /gi,"").trim();
+		  	telno.value = afterTelno;
+		 	
+			if(nickname.value == '') { alert("별명을 입력하세요."); email.focus(); return false; }
+
+			let formData = new FormData(ModifyForm);
+			
+			await fetch('/board/memberInfoModify', {
+				method: 'POST',
+				body: formData,			
+			}).then((response) => response.json())
+			  .then((data) => {
+				  if(data.status === 'good'){
+					  alert("회원정보가 수정되었습니다.");
+					  document.location.href="/board/memberInfo";
+				  } else {
+					  alert("서버 장애로 회원 수정에 실패했습니다.");
+				  }
+			}).catch((error)=> { 
+				alert("시스템 장애로 게시물 수정이 실패했습니다.");
+				console.log("error = " + error);
+			});
+			
+		});
+	}
+
+	const searchAddr = () => {
+	
+		if(addrSearch.value =='') {
+			alert("검색할 주소를 입력하세요.");
+			addrSearch.focus();
+			return false;
+		}
+	
+		window.open(
+		          "/member/addrSearch?page=1&addrSearch=" + addrSearch.value,
+		          "주소검색",
+		          "width=900, height=540, top=50, left=50"
+		);
+		
+	}
+
+
+</script>
+
+<style>
+.imageZone {
+    border: 2px solid #92AAB0;
+    width: 60%;
+    height: auto;
+    color: #92AAB0;
+    text-align: center;
+    vertical-align: middle;
+    margin: auto;
+	padding: 10px 10px;
+    font-size:200%;                 
+}
+
+.addrSearch{
+  width: 80%;
+  border:none;
+  border-bottom: 2px solid #adadad;
+  margin: 5px;
+  padding: 10px 10px;
+  outline:none;
+  color: #636e72;
+  font-size:16px;
+  height:25px;
+  background: none;
+}
+</style>
+
+</head>
+<body>
+
+<div>
+	<img id="topBanner" src="/images/logo.jpg">	
+</div>
+
+<div class="main">
+	<h1>회원 기본 정보 수정</h1><br>
+	
+	<div class="WriteForm">
+		<form id="ModifyForm" name="ModifyForm" method="POST">
+		<br><br>
+			<input type="file" name="fileUpload" id="imageFile" style="display:none;" />
+			<span>이미지 수정을 원하시면 화면을 클릭해 주세요.</span>
+    		<div class="imageZone" id="imageZone"><img th:src="@{'/profile/' + ${member.stored_filename}}" style="display:block;width:90%;height:auto;margin:auto"></div>
+			<input type="text" class="input_field" id="username" name="username" th:value="${member.username}" readonly>
+			<div style="width:90%; text-align:left; position:relative; left: 35px; border-bottom:2px solid #adadad; margin:10px; padding: 10px;">
+				성별 : 
+				<label><input type="radio" name="gender" value="남성" th:checked="${member.gender == '남성'}">남성</label>
+				<label><input type="radio" name="gender" value="여성" th:checked="${member.gender == '여성'}">여성</label><br>
+				취미 : 
+				<label><input type="checkbox" name="hobby" value="음악감상" th:checked="${#strings.contains(member.hobby,'음악감상')}">음악감상</label>
+				<label><input type="checkbox" name="hobby" value="영화보기" th:checked="${#strings.contains(member.hobby,'영화보기')}">영화보기</label>
+				<label><input type="checkbox" name="hobby" value="스포츠" th:checked="${#strings.contains(member.hobby,'스포츠')}">스포츠</label><br>
+				직업 : 
+				<select name="job">
+					<option value="회사원" th:selected="${member.job == '회사원'}">회사원</option>
+					<option value="공무원" th:selected="${member.job == '공무원'}">공무원</option>
+					<option value="자영업" th:selected="${member.job == '자영업'}">자영업</option>
+				</select>
+				<br>
+			</div>
+			<input type="text" id="addrSearch" name="addrSearch" class="addrSearch" placeholder="주소를 검색합니다.">
+	        <input type="button" id="btn_addrSearch" class="btn_addrSearch" value="주소검색" onclick="searchAddr()">
+	        <input type="text" id="zipcode" class="input_field" name="zipcode" th:value="${member.zipcode}" >
+	        <input type="text" id="addr1" class="input_field" name="addr1" th:value="${member.address}">
+	        <input type="text" id="addr2" class="input_field" name="addr2" placeholder="상세주소를 입력하세요" >
+	        <input type="hidden" id="address" name="address">
+	        <input type="text" id="telno" name="telno" class="input_field" th:value="${member.telno}">
+	        <input type="text" id="nickname" name="nickname" class="input_field" th:value="${member.nickname}">
+	        <input type="hidden" name="email" th:value="${session.email}">
+	        <input type="hidden" name="org_filename" th:value="${member.org_filename}">
+	        <input type="hidden" name="stored_filename" th:value="${member.stored_filename}">
+	        <input type="hidden" name="filesize" th:value="${member.filesize}">
+	        <br>
+			<textarea class="input_content" id="description" cols="100" rows="500" name="description">[[${member.description}]]
+			</textarea><br>
+			<input type="button" id="btnModify" class="btn_modify" value="수정">
+			<input type="button" id="btnCancel" class="btn_cancel" value="취소" onclick="history.back()">
+		</form>
+	
+	</div>
+
+</div>
+<br><br>
+
+</body>
+</html>
